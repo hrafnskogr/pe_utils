@@ -1,5 +1,23 @@
 use std::char::{decode_utf16, REPLACEMENT_CHARACTER};
 use std::fmt;
+use std::arch::asm;
+
+
+pub unsafe fn get_image_base() -> usize
+{
+    let mut image_base: usize;
+
+    asm!("xor   rdi,    rdi",               // put rdi to 0
+         "mul   rdi",                       // rax / rdx = 0
+         "mov   rbx,    gs:[rax + 0x60]",   // load PEB address pointer (x86_64 version)
+         "mov   rbx,    [rbx + 0x18]",      // load ldr data structure
+         "mov   rbx,    [rbx + 0x10]",      // ldr.InLoadOrderModuleList.Flink image name
+         "mov   rbx,    [rbx + 0x30]",      // image base address 
+         "mov   rax,    rbx",
+        out("rax") image_base);
+
+    image_base
+}
 
 pub unsafe fn read_until_null(addr: usize) -> (Vec<u8>, usize)
 {
